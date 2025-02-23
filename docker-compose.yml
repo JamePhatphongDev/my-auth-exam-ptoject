@@ -1,0 +1,33 @@
+services:
+  kratos-migrate:
+    image: oryd/kratos:v0.11.1
+    environment:
+      - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true&mode=rwc
+    volumes:
+      - ./config/kratos:/etc/config/kratos
+      - ./db:/var/lib/sqlite
+    command: -c /etc/config/kratos/kratos.yml migrate sql -e --yes
+    restart: on-failure
+    networks:
+      - intranet
+
+  kratos:
+    image: oryd/kratos:v0.11.1
+    depends_on:
+      - kratos-migrate
+    environment:
+      - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true
+      - LOG_LEVEL=debug
+    volumes:
+      - ./config/kratos:/etc/config/kratos
+      - ./db:/var/lib/sqlite
+    command: serve -c /etc/config/kratos/kratos.yml --dev --watch-courier
+    ports:
+      - "4433:4433"
+      - "4434:4434"
+    restart: unless-stopped
+    networks:
+      - intranet
+
+networks:
+  intranet:
